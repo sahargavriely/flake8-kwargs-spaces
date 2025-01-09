@@ -17,7 +17,7 @@ jobs:
       run: |
         pip install flake8
         # stop the build if there are Python syntax errors or undefined names
-        flake8 flake8_kwargs_spaces_test.py --count --show-source --statistics
+        flake8 flake8_kwargs_spaces.py --count --show-source --statistics
         flake8 tests/ --count --show-source --statistics
         flake8 setup.py --count --show-source --statistics
     - name: Test with pytest
