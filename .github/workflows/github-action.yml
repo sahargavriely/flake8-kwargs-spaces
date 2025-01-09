@@ -1,0 +1,28 @@
+name: Python package testing and generate coverage report
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python 3.13
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.13"
+    - name: Create python environment and install dependencies
+      run: ./scripts/install.sh
+    - name: Build the docs
+      run: ./scripts/buildthedocs.sh
+    - name: Lint with flake8
+      run: |
+        pip install flake8
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 brain_computer_interface/ --count --show-source --statistics
+        flake8 tests/ --count --show-source --statistics
+        flake8 setup.py --count --show-source --statistics
+    - name: Test with pytest
+      run: ./scripts/test.sh
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v5
