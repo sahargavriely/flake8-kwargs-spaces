@@ -4,5 +4,4 @@ __pycache__/
 .vscode/
 build/
 flake8_kwargs_spaces.egg-info/
-lenv/
-wenv/
+venv/
