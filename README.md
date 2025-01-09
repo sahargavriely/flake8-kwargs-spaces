@@ -1,6 +1,6 @@
 # Flake8 key world arguments with spaces Plugin
 
-flake8 plugin for encouraging space engulfing of equal sign ( = ) in function calls and function definitions
+The `flake8-kwargs-spaces` package is a plugin for `flake8` that enforces consistent spacing around the equal sign (`=`) in function arguments, both in definitions and calls. It supports enforcing either spaces or no spaces, depending on the argument's position (inline or multi-line)  and the number of arguments in sequence. By integrating this plugin, developers can ensure uniform code formatting, enhancing readability and adherence to style guidelines.
 
 ## Good:
 
@@ -22,7 +22,7 @@ def f(a=3):
 ...
 
 
-f(a = 3)
+f(a=3)
 ```
     
 ## Bad:
@@ -50,16 +50,6 @@ f(a = 3)
 
 ## Installation
 
-### For usage purposes
-
-You can go a head and download the wheel that located  in:
-    ``flake8_kwargs_spaces-0.1.0-py3-none-any.whl``
-
-Right after that all you want to do is install this wheel to your virtual environment (or to your global interpreter if you are trying to flatter me) by doing:
-    ``pip install ...flake8_kwargs_spaces-0.1.0-py3-none-any.whl``
-
-### For development purposes
-
 1. Clone the repository and enter it:
 
     ```sh
@@ -77,26 +67,24 @@ Right after that all you want to do is install this wheel to your virtual enviro
     [flake8-kwargs-spaces] $  # you're good to go!
     ```
 
-3. To check that everything is working as expected, run the tests:
+3. To check that everything is working as expected, run the tests, or skip that, I'm not your mother:
 
     ```
     $ pytest tests/
     ...
     ```
 
-4. Develop, develop, develop (and test!)
-
-5. Build and pack everything up by:
+4. Build and pack everything up by:
 
     ```sh
-    $ pip wheel . -w wheels/
+    $ ./scripts/build.sh
     ...
     ```
 
-6. Boom, you have your whl file under wheels directory ready to install:
+5. Boom, you have your wheel file under wheels directory ready to install wherever you want:
 
     ```sh
-    $ pip install ...flake8_kwargs_spaces-0.1.0-py3-none-any.whl
+    $ pip install ./wheels/flake8_kwargs_spaces-0.1.0-py3-none-any.whl
     ...
     ```
 
