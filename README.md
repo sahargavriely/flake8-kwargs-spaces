@@ -1,64 +1,56 @@
 # Flake8 key world arguments with spaces Plugin
 
-flake8 plugin for encouraging space engulfing of equal sign ( = ) in function calls and function definitions
-
-## Good:
-
-```
-def f(
-    a = 3
-): ...
-
-
-f(
-    a = 3
-)
-```
-
-### Still Good:
-
-```
-def f(a=3):
-...
-
-
-f(a = 3)
-```
+The `flake8-kwargs-spaces` package is a plugin for `flake8` that enforces consistent spacing around the equal sign (`=`) in function arguments, both in definitions and calls. It supports enforcing either spaces or no spaces, depending on the argument's position (inline or multi-line)  and the number of arguments in sequence. By integrating this plugin, developers can ensure uniform code formatting, enhancing readability and adherence to style guidelines.
     
-## Bad:
+## Anti-pattern:
 
-```
-def f(
-    a=3
-): ...
+```py
+def foo(
+    key='val'
+):
+    return key
 
 
-f(
-    a=3
+foo(
+    key='val'
 )
 ```
 
-### Still Bad:
+## Best practice:
 
+```py
+def foo(
+    key = 'val'
+):
+    return key
+
+
+foo(
+    key = 'val'
+)
 ```
-def f(a = 3):
-...
+
+### Still anti-pattern:
+
+```py
+def foo(key = 'val'):
+    return key
 
 
-f(a = 3)
+foo(key = 'val')
+```
+
+### Still best practice:
+
+```py
+def foo(key='val'):
+    return key
+
+
+foo(key='val')
 ```
 
 ## Installation
-
-### For usage purposes
-
-You can go a head and download the wheel that located  in:
-    ``flake8_kwargs_spaces-0.1.0-py3-none-any.whl``
-
-Right after that all you want to do is install this wheel to your virtual environment (or to your global interpreter if you are trying to flatter me) by doing:
-    ``pip install ...flake8_kwargs_spaces-0.1.0-py3-none-any.whl``
-
-### For development purposes
 
 1. Clone the repository and enter it:
 
@@ -77,29 +69,26 @@ Right after that all you want to do is install this wheel to your virtual enviro
     [flake8-kwargs-spaces] $  # you're good to go!
     ```
 
-3. To check that everything is working as expected, run the tests:
+3. To check that everything is working as expected, run the tests, or skip that, I'm not your mother:
 
-    ```
+    ```sh
     $ pytest tests/
     ...
     ```
 
-4. Develop, develop, develop (and test!)
-
-5. Build and pack everything up by:
+5. Under `wheels` directory you should be able to find a `whl` file by the name of `flake8_kwargs_spaces-0.1.0-py3-none-any.whl`. In order to add this plugin to `flake8` you should pip install that file to wherever you want it to be enforced. The commend while look like this:
 
     ```sh
-    $ pip wheel . -w wheels/
+    $ pip install ./wheels/flake8_kwargs_spaces-0.1.0-py3-none-any.whl
     ...
     ```
 
-6. Boom, you have your whl file under wheels directory ready to install:
+6. In addition you will want to ignore `E251` - "Unexpected spaces around keyword / parameter equals", so you will want to add a file by the name of `setup.cfg` and inside it you should put the following:
 
-    ```sh
-    $ pip install ...flake8_kwargs_spaces-0.1.0-py3-none-any.whl
-    ...
     ```
-
+    [flake8]
+    ignore = E251
+    ```
 
 #### Much thanks to:
     https://www.youtube.com/watch?v=ot5Z4KQPBL8

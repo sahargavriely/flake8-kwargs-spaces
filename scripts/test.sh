@@ -2,9 +2,9 @@
 
 function main {
     source venv/bin/activate
-    export TEST_REULST=$?
+    export TEST_RESULT=$?
     deactivate
-    exit ${TEST_REULST}
+    exit ${TEST_RESULT}
 }
 
 main "$@"
