@@ -1,8 +1,10 @@
 __pycache__/
+.coverage
 .env/
 .pytest_cache/
 .vscode/
 build/
+coverage.xml
 flake8_kwargs_spaces.egg-info/
 venv/
 wheels/

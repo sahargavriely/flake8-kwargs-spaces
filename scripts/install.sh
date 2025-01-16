@@ -9,7 +9,6 @@ function main {
     find . -name site-packages -exec bash -c 'echo "../../../../" > {}/self.pth' \;
     venv/bin/pip install -U pip
     venv/bin/pip install -r requirements.txt
-    venv/bin/pip wheel . -w wheels/
 }
 
 main "$@"
