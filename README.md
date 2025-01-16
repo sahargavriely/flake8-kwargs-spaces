@@ -1,3 +1,6 @@
+[![github-workflow](https://github.com/sahargavriely/flake8-kwargs-spaces/actions/workflows/github-action.yml/badge.svg)](https://github.com/sahargavriely/flake8-kwargs-spaces/actions/workflows/github-action.yml)
+[![codecov](https://codecov.io/gh/sahargavriely/flake8-kwargs-spaces/graph/badge.svg?token=W0V7MR7T8S)](https://codecov.io/gh/sahargavriely/flake8-kwargs-spaces)
+
 # Flake8 key world arguments with spaces Plugin
 
 The `flake8-kwargs-spaces` package is a plugin for `flake8` that enforces consistent spacing around the equal sign (`=`) in function arguments, both in definitions and calls. It supports enforcing either spaces or no spaces, depending on the argument's position (inline or multi-line)  and the number of arguments in sequence. By integrating this plugin, developers can ensure uniform code formatting, enhancing readability and adherence to style guidelines.
