@@ -22,7 +22,5 @@ jobs:
         flake8 setup.py --count --show-source --statistics
     - name: Test with pytest
       run: ./scripts/test.sh
-    - name: Build
-      run: ./scripts/build.sh
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v5
