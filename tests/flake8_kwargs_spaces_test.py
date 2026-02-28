@@ -16,7 +16,9 @@ trivial = [
     'def f():\n\
         pass',
     'def f(a):\n\
-        pass'
+        pass',
+    'def f(**kwargs):\n\
+        pass',
 ]
 valid_functions_call = [
     # unexpected
