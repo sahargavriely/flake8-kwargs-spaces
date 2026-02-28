@@ -61,6 +61,11 @@ jobs:
           if [ "$IS_BUMP_MERGE" = "true" ] || [ "$VERSION_NEWER" = "true" ]; then
             SHOULD_RELEASE="true"
           fi
+          # Idempotency guard: reruns should not fail if the tag already exists.
+          if [ "$SHOULD_RELEASE" = "true" ] && git ls-remote --exit-code --tags origin "refs/tags/v$CURRENT" >/dev/null 2>&1; then
+            echo "Tag v$CURRENT already exists on origin; skipping release/publish."
+            SHOULD_RELEASE="false"
+          fi
           echo "should_release=$SHOULD_RELEASE" >> $GITHUB_OUTPUT
 
           # Open PR when: normal merge and we need to bump (version not newer)
