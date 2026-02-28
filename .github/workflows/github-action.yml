@@ -1,13 +1,10 @@
 name: Python package testing and generate coverage report
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
-  workflow_dispatch:   # so release workflow can trigger this on the bump branch
+  workflow_dispatch:
 
 jobs:
   python-tests:

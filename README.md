@@ -1,4 +1,6 @@
-[![github-workflow](https://github.com/sahargavriely/flake8-kwargs-spaces/actions/workflows/github-action.yml/badge.svg)](https://github.com/sahargavriely/flake8-kwargs-spaces/actions/workflows/github-action.yml)
+[![pr-tests](https://github.com/sahargavriely/flake8-kwargs-spaces/actions/workflows/github-action.yml/badge.svg)](https://github.com/sahargavriely/flake8-kwargs-spaces/actions/workflows/github-action.yml)
+[![release-on-merge](https://github.com/sahargavriely/flake8-kwargs-spaces/actions/workflows/release-on-merge.yml/badge.svg)](https://github.com/sahargavriely/flake8-kwargs-spaces/actions/workflows/release-on-merge.yml)
+[![PyPI version](https://img.shields.io/pypi/v/flake8-kwargs-spaces.svg)](https://pypi.org/project/flake8-kwargs-spaces/)
 [![codecov](https://codecov.io/gh/sahargavriely/flake8-kwargs-spaces/graph/badge.svg?token=W0V7MR7T8S)](https://codecov.io/gh/sahargavriely/flake8-kwargs-spaces)
 
 # Flake8 Keyword Arguments with Spaces Plugin
