@@ -1,10 +1,6 @@
 import ast
 import importlib.metadata
-from typing import Any
-from typing import Generator
-from typing import List
-from typing import Tuple
-from typing import Type
+from typing import Any, Dict, Generator, List, Tuple, Type
 
 
 missing_msg = 'EKS100 missing whitespace around keyword / parameter equals'
@@ -12,8 +8,8 @@ unexpected_msg = 'EKS251 unexpected whitespace around keyword / parameter equals
 
 
 def _default_pairs_from_args(args: ast.arguments) -> List[Tuple[ast.arg, ast.expr]]:
-    '''Yield (arg, default) for every parameter that has a default.'''
-    pairs: List[Tuple[ast.arg, ast.expr]] = list()
+    '''Return (arg, default) for every parameter that has a default.'''
+    pairs: List[Tuple[ast.arg, ast.expr]] = []
     # Positional and positional-or-keyword: defaults apply to rightmost of (posonlyargs + args)
     positional_only = getattr(args, 'posonlyargs', [])
     all_positional = positional_only + args.args
@@ -27,26 +23,31 @@ def _default_pairs_from_args(args: ast.arguments) -> List[Tuple[ast.arg, ast.exp
     return pairs
 
 
+LinesMap = Dict[int, List[Tuple[int, ast.expr]]]
+
+
 class Visitor(ast.NodeVisitor):
     def __init__(self) -> None:
-        self.problems: List[Tuple[str, int, int]] = []
+        self.problems: List[Tuple[int, int, str]] = []  # (lineno, col_offset, message)
 
     def visit_Call(self, node: ast.Call) -> Any:
-        lines = dict()
+        lines: LinesMap = {}
         for keyword in node.keywords:
             if keyword.arg is None:
                 continue
             if keyword.lineno not in lines:
-                lines[keyword.lineno] = list()
-            lines.get(keyword.lineno).append((len(keyword.arg) + keyword.col_offset, keyword.value))
+                lines[keyword.lineno] = []
+            lines[keyword.lineno].append((len(keyword.arg) + keyword.col_offset, keyword.value))
         self.visit_lines(lines, node.lineno)
         self.generic_visit(node)
 
-    def _visit_function_def(self, node: ast.FunctionDef) -> None:
-        lines = dict()
+    def _visit_function_def(
+        self, node: ast.FunctionDef | ast.AsyncFunctionDef
+    ) -> None:
+        lines: LinesMap = {}
         for arg, default in _default_pairs_from_args(node.args):
             if arg.lineno not in lines:
-                lines[arg.lineno] = list()
+                lines[arg.lineno] = []
             lines[arg.lineno].append((arg.end_col_offset, default))
         self.visit_lines(lines, node.lineno)
 
@@ -58,7 +59,7 @@ class Visitor(ast.NodeVisitor):
         self._visit_function_def(node)
         self.generic_visit(node)
 
-    def visit_lines(self, lines, func_line):
+    def visit_lines(self, lines: LinesMap, func_line: int) -> None:
         for lineno, line in lines.items():
             if lineno == func_line or len(line) > 1:
                 for end_arg, value in line:
@@ -67,11 +68,15 @@ class Visitor(ast.NodeVisitor):
                 end_arg, value = line[0]
                 self.missing_spaces(lineno, end_arg, value)
 
-    def missing_spaces(self, line, arg_end, value):
+    def missing_spaces(
+        self, line: int, arg_end: int, value: ast.expr
+    ) -> None:
         if value.col_offset - arg_end < 3:
             self.problems.append((line, value.col_offset, missing_msg))
 
-    def unexpected_spaces(self, line, arg_end, value):
+    def unexpected_spaces(
+        self, line: int, arg_end: int, value: ast.expr
+    ) -> None:
         if value.col_offset - arg_end > 1:
             self.problems.append((line, value.col_offset, unexpected_msg))
 
