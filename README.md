@@ -60,6 +60,14 @@ foo(key='val')
 
 ## Installation
 
+**From PyPI** (once published):
+
+```sh
+pip install flake8-kwargs-spaces
+```
+
+**From source** (development or before first publish):
+
 1. Clone the repository and enter it:
 
    ```sh
@@ -92,6 +100,10 @@ foo(key='val')
    [flake8]
    ignore = E251
    ```
+
+## License
+
+MIT. See [LICENSE](LICENSE).
 
 ## Thanks
 
