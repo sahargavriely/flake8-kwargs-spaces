@@ -1,4 +1,5 @@
 import ast
+import sys
 from typing import Set
 
 import pytest
@@ -137,6 +138,67 @@ invalid_functions_def = [
         pass'),
 ]
 
+valid_async_function_def = [
+    'async def f(no="spaces"):\n\
+        pass',
+    'async def f(\n\
+        yes = "spaces"\n\
+    ):\n\
+        pass',
+]
+invalid_async_function_def = [
+    ([(1, 18, unexpected_msg)],
+     'async def f(left ="space"):\n\
+        pass'),
+    ([(2, 11, missing_msg)],
+     'async def f(\n\
+        x= 1\n\
+     ):\n\
+        pass'),
+]
+
+valid_keyword_only_def = [
+    'def f(*, a=1):\n\
+        pass',
+    'def f(*, no="spaces"):\n\
+        pass',
+    'def f(*,\n\
+        yes = "spaces"\n\
+    ):\n\
+        pass',
+]
+invalid_keyword_only_def = [
+    ([(1, 15, unexpected_msg)],
+     'def f(*, left ="space"):\n\
+        pass'),
+    ([(2, 11, missing_msg)],
+     'def f(*,\n\
+        x= 1\n\
+     ):\n\
+        pass'),
+]
+
+valid_positional_only_def = [
+    'def f(a=1, /):\n\
+        pass',
+    'def f(a=1, /, b=2):\n\
+        pass',
+    'def f(\n\
+        a = 1, /\n\
+    ):\n\
+        pass',
+]
+invalid_positional_only_def = [
+    ([(1, 12, unexpected_msg)],
+     'def f(left ="space", /):\n\
+        pass'),
+    ([(2, 11, missing_msg)],
+     'def f(\n\
+        x= 1, /\n\
+     ):\n\
+        pass'),
+]
+
 
 @pytest.mark.parametrize('case', trivial)
 def test_trivial_case(case):
@@ -160,6 +222,38 @@ def test_valid_function_def(case):
 
 @pytest.mark.parametrize('errors, case', invalid_functions_def)
 def test_invalid_function_def(errors, case):
+    _errors_assertions(errors, case)
+
+
+@pytest.mark.parametrize('case', valid_async_function_def)
+def test_valid_async_function_def(case):
+    _no_errors_assertions(case)
+
+
+@pytest.mark.parametrize('errors, case', invalid_async_function_def)
+def test_invalid_async_function_def(errors, case):
+    _errors_assertions(errors, case)
+
+
+@pytest.mark.parametrize('case', valid_keyword_only_def)
+def test_valid_keyword_only_def(case):
+    _no_errors_assertions(case)
+
+
+@pytest.mark.parametrize('errors, case', invalid_keyword_only_def)
+def test_invalid_keyword_only_def(errors, case):
+    _errors_assertions(errors, case)
+
+
+@pytest.mark.skipif(sys.version_info < (3, 8), reason='positional-only parameters require Python 3.8+')
+@pytest.mark.parametrize('case', valid_positional_only_def)
+def test_valid_positional_only_def(case):
+    _no_errors_assertions(case)
+
+
+@pytest.mark.skipif(sys.version_info < (3, 8), reason='positional-only parameters require Python 3.8+')
+@pytest.mark.parametrize('errors, case', invalid_positional_only_def)
+def test_invalid_positional_only_def(errors, case):
     _errors_assertions(errors, case)
 
 
