@@ -1,7 +1,7 @@
-# On every merge to main: release that version to PyPI.
-# - If version in setup.cfg is *newer* than the latest tag (e.g. you set 0.2.0), release it as-is.
-# - Otherwise bump patch (e.g. 0.1.0 → 0.1.1), commit, then release.
-# Skips when the push is our own version-bump commit to avoid a loop.
+# On every merge to main:
+# - If this is the merge of our "chore: bump version" PR → tag, release, publish to PyPI.
+# - Else if version in setup.cfg is newer than latest tag (you set 0.2.0) → tag, release, publish.
+# - Else → bump patch, open a PR; you merge it → next run does tag/release/publish.
 
 name: Bump version and release on merge
 
@@ -17,7 +17,7 @@ jobs:
     permissions:
       contents: write
     outputs:
-      release_version: ${{ steps.set_release_version.outputs.release_version }}
+      release_version: ${{ steps.outputs_step.outputs.release_version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,80 +25,102 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Skip if this is our version-bump commit
-        id: skip
+      - name: Detect mode and version
+        id: mode
         run: |
           MSG="${{ github.event.head_commit.message }}"
-          if [[ "$MSG" == *"chore: bump version to"* ]]; then
-            echo "skip=true" >> $GITHUB_OUTPUT
-            echo "Skipping: commit is automated version bump"
-          else
-            echo "skip=false" >> $GITHUB_OUTPUT
+          IS_BUMP_MERGE="false"
+          if [[ "$MSG" == *"chore: bump version to"* ]] || [[ "$MSG" == *"chore/bump-version"* ]]; then
+            IS_BUMP_MERGE="true"
           fi
+          echo "is_bump_merge=$IS_BUMP_MERGE" >> $GITHUB_OUTPUT
 
-      - name: Decide version (use setup.cfg as-is if newer than latest tag, else bump patch)
-        id: version
-        if: steps.skip.outputs.skip == 'false'
-        run: |
           CURRENT=$(grep '^version = ' setup.cfg | sed 's/version = *//;s/ *$//')
           if [ -z "$CURRENT" ]; then
             echo "::error::Could not read version from setup.cfg"
             exit 1
           fi
+          echo "current_version=$CURRENT" >> $GITHUB_OUTPUT
+
           LATEST_TAG=$(git tag -l 'v*' --sort=-v:refname 2>/dev/null | head -1)
           LATEST=${LATEST_TAG#v}
           LATEST=${LATEST:-0.0.0}
           NEWER=$(printf '%s\n%s' "$LATEST" "$CURRENT" | sort -V | tail -1)
+          VERSION_NEWER="false"
           if [ "$NEWER" = "$CURRENT" ] && [ "$CURRENT" != "$LATEST" ]; then
-            echo "release_version=$CURRENT" >> $GITHUB_OUTPUT
-            echo "bump=false" >> $GITHUB_OUTPUT
-            echo "Using version from setup.cfg (newer than latest tag): $CURRENT"
-          else
+            VERSION_NEWER="true"
+          fi
+          echo "version_newer=$VERSION_NEWER" >> $GITHUB_OUTPUT
+
+          # Tag/release/publish when: our bump PR was just merged, OR user set a newer version on main
+          SHOULD_RELEASE="false"
+          if [ "$IS_BUMP_MERGE" = "true" ] || [ "$VERSION_NEWER" = "true" ]; then
+            SHOULD_RELEASE="true"
+          fi
+          echo "should_release=$SHOULD_RELEASE" >> $GITHUB_OUTPUT
+
+          # Open PR when: normal merge and we need to bump (version not newer)
+          NEED_PR="false"
+          if [ "$IS_BUMP_MERGE" = "false" ] && [ "$VERSION_NEWER" = "false" ]; then
+            NEED_PR="true"
+          fi
+          echo "need_pr=$NEED_PR" >> $GITHUB_OUTPUT
+
+          if [ "$NEED_PR" = "true" ]; then
             MAJOR=$(echo "$CURRENT" | cut -d. -f1)
             MINOR=$(echo "$CURRENT" | cut -d. -f2)
             PATCH=$(echo "$CURRENT" | cut -d. -f3)
             PATCH=${PATCH:-0}
             PATCH=$((PATCH + 1))
             NEW="${MAJOR}.${MINOR}.${PATCH}"
-            echo "release_version=$NEW" >> $GITHUB_OUTPUT
-            echo "bump=true" >> $GITHUB_OUTPUT
-            echo "Bumping $CURRENT → $NEW"
+            echo "bump_version=$NEW" >> $GITHUB_OUTPUT
+            echo "Will open PR to bump $CURRENT → $NEW"
+          else
+            echo "bump_version=" >> $GITHUB_OUTPUT
+            if [ "$SHOULD_RELEASE" = "true" ]; then
+              echo "Will tag and release $CURRENT"
+            fi
           fi
 
-      - name: Update setup.cfg and commit (only when bumping patch)
-        if: steps.skip.outputs.skip == 'false' && steps.version.outputs.bump == 'true'
+      - name: Update setup.cfg and push to branch (open PR only)
+        if: steps.mode.outputs.need_pr == 'true'
         run: |
-          NEW="${{ steps.version.outputs.release_version }}"
+          NEW="${{ steps.mode.outputs.bump_version }}"
           sed -i.bak "s/^version = .*/version = $NEW/" setup.cfg && rm setup.cfg.bak
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add setup.cfg
           git commit -m "chore: bump version to $NEW"
+          BRANCH="chore/bump-version-$NEW"
+          git push origin HEAD:"$BRANCH"
+          gh pr create --base main --head "$BRANCH" \
+            --title "chore: bump version to $NEW" \
+            --body "Automated version bump. Merge this PR, then the next workflow run will tag and publish to PyPI."
 
-      - name: Create tag and push tag
-        if: steps.skip.outputs.skip == 'false'
+      - name: Create tag and push tag (only after bump PR is merged or user set version)
+        if: steps.mode.outputs.should_release == 'true'
         run: |
-          TAG="v${{ steps.version.outputs.release_version }}"
-          git tag "$TAG"
-          git push origin "$TAG"
-
-      - name: Push version bump to main (only when we bumped)
-        if: steps.skip.outputs.skip == 'false' && steps.version.outputs.bump == 'true'
-        run: git push origin main
+          VER="${{ steps.mode.outputs.current_version }}"
+          git tag "v$VER"
+          git push origin "v$VER"
 
       - name: Create GitHub Release
-        if: steps.skip.outputs.skip == 'false'
+        if: steps.mode.outputs.should_release == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "v${{ steps.version.outputs.release_version }}" \
-            --title "v${{ steps.version.outputs.release_version }}" \
+          gh release create "v${{ steps.mode.outputs.current_version }}" \
+            --title "v${{ steps.mode.outputs.current_version }}" \
             --generate-notes
 
-      - name: Set release version output
-        if: steps.skip.outputs.skip == 'false'
-        id: set_release_version
-        run: echo "release_version=${{ steps.version.outputs.release_version }}" >> $GITHUB_OUTPUT
+      - name: Set release version output (for publish job)
+        id: outputs_step
+        run: |
+          if [ "${{ steps.mode.outputs.should_release }}" = "true" ]; then
+            echo "release_version=${{ steps.mode.outputs.current_version }}" >> $GITHUB_OUTPUT
+          else
+            echo "release_version=" >> $GITHUB_OUTPUT
+          fi
 
   publish-pypi:
     name: Publish to PyPI
