@@ -1,9 +1,11 @@
 import ast
+import importlib
 import sys
 from typing import Set
 
 import pytest
 
+import flake8_kwargs_spaces
 from flake8_kwargs_spaces import Plugin, missing_msg, unexpected_msg
 
 
@@ -200,6 +202,9 @@ invalid_async_function_def = [
 ]
 
 valid_keyword_only_def = [
+    # kw-only required arg (no default) should be ignored by default-pair checks
+    'def f(*, required):\n\
+        pass',
     # unexpected
     'def f(*, no="spaces"):\n\
         pass',
@@ -395,3 +400,17 @@ def _extract_errors(s: str) -> Set[str]:
     tree = ast.parse(s)
     plugin = Plugin(tree)
     return {f'{line}:{col} {msg}' for line, col, msg, _ in plugin.run()}
+
+
+def test_plugin_version_falls_back_when_package_metadata_is_missing() -> None:
+    # Plugin.version is set at import time, so reload after monkeypatching metadata lookup.
+    with pytest.MonkeyPatch.context() as m:
+        def _raise_package_not_found(_: str) -> str:
+            raise importlib.metadata.PackageNotFoundError
+
+        m.setattr(importlib.metadata, 'version', _raise_package_not_found)
+        reloaded_module = importlib.reload(flake8_kwargs_spaces)
+        assert reloaded_module.Plugin.version == '0.0.0'
+
+    # Restore module state for any subsequent tests.
+    importlib.reload(flake8_kwargs_spaces)
