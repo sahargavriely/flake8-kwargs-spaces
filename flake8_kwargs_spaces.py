@@ -19,7 +19,6 @@ class Visitor(ast.NodeVisitor):
         lines = dict()
         for keyword in node.keywords:
             if keyword.arg is None:
-                # Unpacked kwargs (e.g. **kwargs) do not contain an equals sign.
                 continue
             if keyword.lineno not in lines:
                 lines[keyword.lineno] = list()
