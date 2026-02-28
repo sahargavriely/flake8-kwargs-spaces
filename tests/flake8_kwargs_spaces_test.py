@@ -11,6 +11,7 @@ trivial = [
     # func call no kwargs
     'f()',
     'f(a)',
+    'f(**kwargs)',
     # 'func def no kwargs
     'def f():\n\
         pass',
