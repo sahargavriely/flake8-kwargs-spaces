@@ -94,10 +94,10 @@ jobs:
           git add setup.cfg
           git commit -m "chore: bump version to $NEW"
           BRANCH="chore/bump-version-$NEW"
-          git push origin HEAD:"$BRANCH"
+          git push --force origin HEAD:"$BRANCH"
           gh pr create --base main --head "$BRANCH" \
             --title "chore: bump version to $NEW" \
-            --body "Automated version bump. Merge this PR, then the next workflow run will tag and publish to PyPI."
+            --body "Automated version bump. Merge this PR, then the next workflow run will tag and publish to PyPI." || true
 
       - name: Create tag and push tag (only after bump PR is merged or user set version)
         if: steps.mode.outputs.should_release == 'true'
