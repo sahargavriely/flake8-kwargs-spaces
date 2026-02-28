@@ -84,6 +84,8 @@ jobs:
 
       - name: Update setup.cfg and push to branch (open PR only)
         if: steps.mode.outputs.need_pr == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           NEW="${{ steps.mode.outputs.bump_version }}"
           sed -i.bak "s/^version = .*/version = $NEW/" setup.cfg && rm setup.cfg.bak
