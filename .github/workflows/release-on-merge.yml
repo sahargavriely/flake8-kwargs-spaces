@@ -1,0 +1,94 @@
+# On every merge to main: release that version to PyPI.
+# - If version in setup.cfg is *newer* than the latest tag (e.g. you set 0.2.0), release it as-is.
+# - Otherwise bump patch (e.g. 0.1.0 → 0.1.1), commit, then release.
+# Skips when the push is our own version-bump commit to avoid a loop.
+
+name: Bump version and release on merge
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  bump-and-release:
+    name: Bump patch and publish release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Skip if this is our version-bump commit
+        id: skip
+        run: |
+          MSG="${{ github.event.head_commit.message }}"
+          if [[ "$MSG" == *"chore: bump version to"* ]]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "Skipping: commit is automated version bump"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Decide version (use setup.cfg as-is if newer than latest tag, else bump patch)
+        id: version
+        if: steps.skip.outputs.skip == 'false'
+        run: |
+          CURRENT=$(grep '^version = ' setup.cfg | sed 's/version = *//;s/ *$//')
+          if [ -z "$CURRENT" ]; then
+            echo "::error::Could not read version from setup.cfg"
+            exit 1
+          fi
+          LATEST_TAG=$(git tag -l 'v*' --sort=-v:refname 2>/dev/null | head -1)
+          LATEST=${LATEST_TAG#v}
+          LATEST=${LATEST:-0.0.0}
+          NEWER=$(printf '%s\n%s' "$LATEST" "$CURRENT" | sort -V | tail -1)
+          if [ "$NEWER" = "$CURRENT" ] && [ "$CURRENT" != "$LATEST" ]; then
+            echo "release_version=$CURRENT" >> $GITHUB_OUTPUT
+            echo "bump=false" >> $GITHUB_OUTPUT
+            echo "Using version from setup.cfg (newer than latest tag): $CURRENT"
+          else
+            MAJOR=$(echo "$CURRENT" | cut -d. -f1)
+            MINOR=$(echo "$CURRENT" | cut -d. -f2)
+            PATCH=$(echo "$CURRENT" | cut -d. -f3)
+            PATCH=${PATCH:-0}
+            PATCH=$((PATCH + 1))
+            NEW="${MAJOR}.${MINOR}.${PATCH}"
+            echo "release_version=$NEW" >> $GITHUB_OUTPUT
+            echo "bump=true" >> $GITHUB_OUTPUT
+            echo "Bumping $CURRENT → $NEW"
+          fi
+
+      - name: Update setup.cfg and commit (only when bumping patch)
+        if: steps.skip.outputs.skip == 'false' && steps.version.outputs.bump == 'true'
+        run: |
+          NEW="${{ steps.version.outputs.release_version }}"
+          sed -i.bak "s/^version = .*/version = $NEW/" setup.cfg && rm setup.cfg.bak
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add setup.cfg
+          git commit -m "chore: bump version to $NEW"
+
+      - name: Create tag and push tag
+        if: steps.skip.outputs.skip == 'false'
+        run: |
+          TAG="v${{ steps.version.outputs.release_version }}"
+          git tag "$TAG"
+          git push origin "$TAG"
+
+      - name: Push version bump to main (only when we bumped)
+        if: steps.skip.outputs.skip == 'false' && steps.version.outputs.bump == 'true'
+        run: git push origin main
+
+      - name: Create GitHub Release
+        if: steps.skip.outputs.skip == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${{ steps.version.outputs.release_version }}" \
+            --title "v${{ steps.version.outputs.release_version }}" \
+            --generate-notes
