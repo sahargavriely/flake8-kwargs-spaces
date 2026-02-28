@@ -11,6 +11,22 @@ missing_msg = 'EKS100 missing whitespace around keyword / parameter equals'
 unexpected_msg = 'EKS251 unexpected whitespace around keyword / parameter equals'
 
 
+def _default_pairs_from_args(args: ast.arguments) -> List[Tuple[ast.arg, ast.expr]]:
+    '''Yield (arg, default) for every parameter that has a default.'''
+    pairs: List[Tuple[ast.arg, ast.expr]] = list()
+    # Positional and positional-or-keyword: defaults apply to rightmost of (posonlyargs + args)
+    positional_only = getattr(args, 'posonlyargs', [])
+    all_positional = positional_only + args.args
+    if args.defaults:
+        for arg, default in zip(reversed(all_positional), reversed(args.defaults)):
+            pairs.append((arg, default))
+    # Keyword-only: each kwonlyarg can have a default in kw_defaults (None = no default)
+    for arg, default in zip(args.kwonlyargs, args.kw_defaults):
+        if default is not None:
+            pairs.append((arg, default))
+    return pairs
+
+
 class Visitor(ast.NodeVisitor):
     def __init__(self) -> None:
         self.problems: List[Tuple[str, int, int]] = []
@@ -26,14 +42,20 @@ class Visitor(ast.NodeVisitor):
         self.visit_lines(lines, node.lineno)
         self.generic_visit(node)
 
-    def visit_FunctionDef(self, node: ast.FunctionDef) -> Any:
-        args = node.args
+    def _visit_function_def(self, node: ast.FunctionDef) -> None:
         lines = dict()
-        for arg, default in zip(reversed(args.args), reversed(args.defaults)):
+        for arg, default in _default_pairs_from_args(node.args):
             if arg.lineno not in lines:
                 lines[arg.lineno] = list()
-            lines.get(arg.lineno).append((arg.end_col_offset, default))
+            lines[arg.lineno].append((arg.end_col_offset, default))
         self.visit_lines(lines, node.lineno)
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> Any:
+        self._visit_function_def(node)
+        self.generic_visit(node)
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> Any:
+        self._visit_function_def(node)
         self.generic_visit(node)
 
     def visit_lines(self, lines, func_line):
