@@ -16,6 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write   # so gh pr create can open the bump-version PR
     outputs:
       release_version: ${{ steps.outputs_step.outputs.release_version }}
     steps:
@@ -97,7 +98,7 @@ jobs:
           git push --force origin HEAD:"$BRANCH"
           gh pr create --base main --head "$BRANCH" \
             --title "chore: bump version to $NEW" \
-            --body "Automated version bump. Merge this PR, then the next workflow run will tag and publish to PyPI." || true
+            --body "Automated version bump. Merge this PR, then the next workflow run will tag and publish to PyPI."
 
       - name: Create tag and push tag (only after bump PR is merged or user set version)
         if: steps.mode.outputs.should_release == 'true'
