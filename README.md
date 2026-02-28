@@ -1,11 +1,11 @@
 [![github-workflow](https://github.com/sahargavriely/flake8-kwargs-spaces/actions/workflows/github-action.yml/badge.svg)](https://github.com/sahargavriely/flake8-kwargs-spaces/actions/workflows/github-action.yml)
 [![codecov](https://codecov.io/gh/sahargavriely/flake8-kwargs-spaces/graph/badge.svg?token=W0V7MR7T8S)](https://codecov.io/gh/sahargavriely/flake8-kwargs-spaces)
 
-# Flake8 key world arguments with spaces Plugin
+# Flake8 Keyword Arguments with Spaces Plugin
 
-The `flake8-kwargs-spaces` package is a plugin for `flake8` that enforces consistent spacing around the equal sign (`=`) in function arguments, both in definitions and calls. It supports enforcing either spaces or no spaces, depending on the argument's position (inline or multi-line)  and the number of arguments in sequence. By integrating this plugin, developers can ensure uniform code formatting, enhancing readability and adherence to style guidelines.
-    
-## Anti-pattern:
+The `flake8-kwargs-spaces` package is a plugin for Flake8 that enforces consistent spacing around the equals sign (`=`) in function arguments, in both definitions and calls. It supports enforcing either spaces or no spaces depending on the argument's position (inline or multi-line) and the number of arguments in sequence. By integrating this plugin, developers can ensure uniform code formatting and adherence to style guidelines.
+
+## Anti-pattern
 
 ```py
 def foo(
@@ -19,7 +19,7 @@ foo(
 )
 ```
 
-## Best practice:
+## Best practice
 
 ```py
 def foo(
@@ -33,7 +33,7 @@ foo(
 )
 ```
 
-### Still anti-pattern:
+### Still anti-pattern
 
 ```py
 def foo(key = 'val'):
@@ -43,7 +43,7 @@ def foo(key = 'val'):
 foo(key = 'val')
 ```
 
-### Still best practice:
+### Still best practice
 
 ```py
 def foo(key='val'):
@@ -57,44 +57,40 @@ foo(key='val')
 
 1. Clone the repository and enter it:
 
-    ```sh
-    $ git clone git@github.com:sahargavriely/flake8-kwargs-spaces.git
-    ...
-    $ cd flake8-kwargs-spaces/
-    ```
+   ```sh
+   git clone git@github.com:sahargavriely/flake8-kwargs-spaces.git
+   cd flake8-kwargs-spaces
+   ```
 
-2. Run the installation script and activate the virtual environment according to your operating system:
+2. Run the installation script, then activate the virtual environment:
 
-    ```sh
-    $ ./scripts/install.sh
-    ...
-    $ source .env/bin/activate
-    [flake8-kwargs-spaces] $  # you're good to go!
-    ```
+   ```sh
+   ./scripts/install.sh
+   source venv/bin/activate
+   ```
 
-3. To check that everything is working as expected, run the tests, or skip that, I'm not your mother:
+3. (Optional) Run the test suite to verify everything works:
 
-    ```sh
-    $ pytest tests/
-    ...
-    ```
+   ```sh
+   pytest tests/
+   ```
 
-5. Under `wheels` directory you should be able to find a `whl` file by the name of `flake8_kwargs_spaces-0.1.0-py3-none-any.whl`. In order to add this plugin to `flake8` you should pip install that file to wherever you want it to be enforced. The commend while look like this:
+4. The install script builds a wheel under `wheels/`. To use the plugin with Flake8, install that wheel in the environment where you want the plugin enforced:
 
-    ```sh
-    $ pip install ./wheels/flake8_kwargs_spaces-0.1.0-py3-none-any.whl
-    ...
-    ```
+   ```sh
+   pip install ./wheels/flake8_kwargs_spaces-0.1.0-py3-none-any.whl
+   ```
 
-6. In addition you will want to ignore `E251` - "Unexpected spaces around keyword / parameter equals", so you will want to add a file by the name of `setup.cfg` and inside it you should put the following:
+5. To avoid conflicts with Flake8’s built-in E251 rule, add a `setup.cfg` (or use your existing one) with:
 
-    ```
-    [flake8]
-    ignore = E251
-    ```
+   ```ini
+   [flake8]
+   ignore = E251
+   ```
 
-#### Much thanks to:
-    https://www.youtube.com/watch?v=ot5Z4KQPBL8
-    https://www.youtube.com/watch?v=4L0Jb3Ku81s
-    https://www.youtube.com/watch?v=GaWs-LenLYE
-    https://www.youtube.com/watch?v=02aAZ8u3wEQ
+## Thanks
+
+- https://www.youtube.com/watch?v=ot5Z4KQPBL8
+- https://www.youtube.com/watch?v=4L0Jb3Ku81s
+- https://www.youtube.com/watch?v=GaWs-LenLYE
+- https://www.youtube.com/watch?v=02aAZ8u3wEQ
