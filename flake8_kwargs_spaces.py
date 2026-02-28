@@ -54,6 +54,7 @@ class Visitor(ast.NodeVisitor):
         for arg, default in _default_pairs_from_args(node.args):
             if arg.lineno not in lines:
                 lines[arg.lineno] = []
+            # Store start of span (end_col_offset is exclusive in AST, so it's already the first col after arg)
             lines[arg.lineno].append((arg.end_col_offset, default))
         self.visit_lines(lines, node.lineno)
 
@@ -68,23 +69,23 @@ class Visitor(ast.NodeVisitor):
     def visit_lines(self, lines: LinesMap, func_line: int) -> None:
         for lineno, line in lines.items():
             if lineno == func_line or len(line) > 1:
-                for end_arg, value in line:
-                    self.unexpected_spaces(lineno, end_arg, value)
+                for span_start, value in line:
+                    self.unexpected_spaces(lineno, span_start, value)
             else:
-                end_arg, value = line[0]
-                self.missing_spaces(lineno, end_arg, value)
+                span_start, value = line[0]
+                self.missing_spaces(lineno, span_start, value)
 
     def missing_spaces(
-        self, line: int, arg_end: int, value: ast.expr
+        self, line: int, span_start: int, value: ast.expr
     ) -> None:
-        if value.col_offset - arg_end < 3:
-            self.problems.append((line, value.col_offset, missing_msg))
+        if value.col_offset - span_start < 3:
+            self.problems.append((line, span_start + 1, missing_msg))
 
     def unexpected_spaces(
-        self, line: int, arg_end: int, value: ast.expr
+        self, line: int, span_start: int, value: ast.expr
     ) -> None:
-        if value.col_offset - arg_end > 1:
-            self.problems.append((line, value.col_offset, unexpected_msg))
+        if value.col_offset - span_start > 1:
+            self.problems.append((line, span_start + 1, unexpected_msg))
 
 
 class Plugin:
