@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:   # so release workflow can trigger this on the bump branch
 
 jobs:
   python-tests:
