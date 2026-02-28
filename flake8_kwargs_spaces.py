@@ -78,13 +78,13 @@ class Visitor(ast.NodeVisitor):
         self, line: int, arg_end: int, value: ast.expr
     ) -> None:
         if value.col_offset - arg_end < 3:
-            self.problems.append((line, value.col_offset, missing_msg))
+            self.problems.append((line, arg_end, missing_msg))
 
     def unexpected_spaces(
         self, line: int, arg_end: int, value: ast.expr
     ) -> None:
         if value.col_offset - arg_end > 1:
-            self.problems.append((line, value.col_offset, unexpected_msg))
+            self.problems.append((line, arg_end, unexpected_msg))
 
 
 class Plugin:
