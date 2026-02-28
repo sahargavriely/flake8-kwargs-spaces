@@ -19,6 +19,8 @@ jobs:
       pull-requests: write   # so gh pr create can open the bump-version PR
     outputs:
       release_version: ${{ steps.outputs_step.outputs.release_version }}
+      need_pr: ${{ steps.pr_outputs.outputs.need_pr }}
+      bump_branch: ${{ steps.pr_outputs.outputs.bump_branch }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -96,10 +98,20 @@ jobs:
           git commit -m "chore: bump version to $NEW"
           BRANCH="chore/bump-version-$NEW"
           git push --force origin HEAD:"$BRANCH"
+          BODY="Automated version bump. Merge this PR, then the next workflow run will tag and publish to PyPI."
           gh pr create --base main --head "$BRANCH" \
             --title "chore: bump version to $NEW" \
-            --body "Automated version bump. Merge this PR, then the next workflow run will tag and publish to PyPI."
-          gh workflow run github-action.yml --ref "$BRANCH"
+            --body "$BODY"
+
+      - name: Set PR job outputs
+        id: pr_outputs
+        run: |
+          echo "need_pr=${{ steps.mode.outputs.need_pr }}" >> $GITHUB_OUTPUT
+          if [ "${{ steps.mode.outputs.need_pr }}" = "true" ]; then
+            echo "bump_branch=chore/bump-version-${{ steps.mode.outputs.bump_version }}" >> $GITHUB_OUTPUT
+          else
+            echo "bump_branch=" >> $GITHUB_OUTPUT
+          fi
 
       - name: Create tag and push tag (only after bump PR is merged or user set version)
         if: steps.mode.outputs.should_release == 'true'
@@ -125,6 +137,34 @@ jobs:
           else
             echo "release_version=" >> $GITHUB_OUTPUT
           fi
+
+  python-tests:
+    name: python-tests
+    needs: bump-and-release
+    if: needs.bump-and-release.outputs.need_pr == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/heads/${{ needs.bump-and-release.outputs.bump_branch }}
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Create python environment and install dependencies
+        run: ./scripts/install.sh
+      - name: Lint with flake8
+        run: |
+          pip install flake8
+          flake8 flake8_kwargs_spaces.py --count --show-source --statistics
+          flake8 tests/ --count --show-source --statistics
+          flake8 setup.py --count --show-source --statistics
+      - name: Test with pytest
+        run: ./scripts/test.sh
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   publish-pypi:
     name: Publish to PyPI
