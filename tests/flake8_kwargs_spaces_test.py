@@ -44,31 +44,31 @@ valid_functions_call = [
 ]
 invalid_functions_call = [
     # unexpected
-    ([(1, 6, unexpected_msg)], 'f(left ="space")'),
-    ([(1, 7, unexpected_msg)], 'f(right= "space")'),
-    ([(1, 5, unexpected_msg)], 'f(two = "spaces")'),
-    ([(2, 24, unexpected_msg)],
+    ([(1, 7, unexpected_msg)], 'f(left ="space")'),
+    ([(1, 8, unexpected_msg)], 'f(right= "space")'),
+    ([(1, 6, unexpected_msg)], 'f(two = "spaces")'),
+    ([(2, 25, unexpected_msg)],
      'f(\n\
         more="than", one= "line"\n\
      )'),
     # missing
-    ([(2, 12, missing_msg)],
+    ([(2, 13, missing_msg)],
      'f(\n\
         left ="space"\n\
      )'),
-    ([(2, 13, missing_msg)],
+    ([(2, 14, missing_msg)],
      'f(\n\
         right= "space"\n\
      )'),
-    ([(2, 12, missing_msg)],
+    ([(2, 13, missing_msg)],
      'f(\n\
         both="spaces"\n\
      )'),
     # combine
     (
         [
-            (1, 6, unexpected_msg),
-            (2, 16, missing_msg),
+            (1, 7, unexpected_msg),
+            (2, 17, missing_msg),
         ],
         'f(left ="space", no="space",\n\
            right= "space",\n\
@@ -105,32 +105,32 @@ valid_functions_def = [
         pass',
 ]
 invalid_functions_def = [
-    # unexpected
-    ([(1, 10, unexpected_msg)],
+    # unexpected (col = 1-based, first column after arg name)
+    ([(1, 11, unexpected_msg)],
      'def f(left ="space"):\n\
         pass'),
-    ([(1, 11, unexpected_msg)],
+    ([(1, 12, unexpected_msg)],
      'def f(right= "spaces"):\n\
         pass'),
-    ([(1, 10, unexpected_msg)],
+    ([(1, 11, unexpected_msg)],
      'def f(both = "spaces"):\n\
         pass'),
-    ([(2, 25, unexpected_msg)],
+    ([(2, 26, unexpected_msg)],
      'def f(\n\
         upon="more", than ="one"):\n\
         pass'),
     # missing
-    ([(2, 12, missing_msg)],
+    ([(2, 13, missing_msg)],
      'def f(\n\
         left= "space"\n\
      ):\n\
         pass'),
-    ([(2, 13, missing_msg)],
+    ([(2, 14, missing_msg)],
      'def f(\n\
         right ="space"\n\
      ):\n\
         pass'),
-    ([(3, 11, missing_msg)],
+    ([(3, 12, missing_msg)],
      'def f(\n\
         yes = "spaces",\n\
         two= "parameters"\n\
@@ -139,62 +139,184 @@ invalid_functions_def = [
 ]
 
 valid_async_function_def = [
+    # unexpected
     'async def f(no="spaces"):\n\
         pass',
+    'async def f(no="spaces", two="parameters"):\n\
+        pass',
+    'async def f(no="spaces", two="parameters",\n\
+           upon="more", than="one_line"):\n\
+        pass',
+    # missing
     'async def f(\n\
         yes = "spaces"\n\
     ):\n\
         pass',
+    'async def f(\n\
+        yes = "spaces",\n\
+        two = "parameters"\n\
+    ):\n\
+        pass',
+    # combine
+    'async def f(\n\
+        yes = "spaces",\n\
+        two = "parameters",\n\
+        everything="combine", final="form"\n\
+    ):\n\
+        pass',
 ]
 invalid_async_function_def = [
-    ([(1, 16, unexpected_msg)],
+    # unexpected (col = 1-based, first column after arg name)
+    ([(1, 17, unexpected_msg)],
      'async def f(left ="space"):\n\
         pass'),
-    ([(2, 9, missing_msg)],
+    ([(1, 18, unexpected_msg)],
+     'async def f(right= "spaces"):\n\
+        pass'),
+    ([(1, 17, unexpected_msg)],
+     'async def f(both = "spaces"):\n\
+        pass'),
+    ([(2, 26, unexpected_msg)],
      'async def f(\n\
-        x= 1\n\
+        upon="more", than ="one"):\n\
+        pass'),
+    # missing
+    ([(2, 13, missing_msg)],
+     'async def f(\n\
+        left= "space"\n\
+     ):\n\
+        pass'),
+    ([(2, 14, missing_msg)],
+     'async def f(\n\
+        right ="space"\n\
+     ):\n\
+        pass'),
+    ([(3, 12, missing_msg)],
+     'async def f(\n\
+        yes = "spaces",\n\
+        two= "parameters"\n\
      ):\n\
         pass'),
 ]
 
 valid_keyword_only_def = [
-    'def f(*, a=1):\n\
-        pass',
+    # unexpected
     'def f(*, no="spaces"):\n\
         pass',
+    'def f(*, no="spaces", two="parameters"):\n\
+        pass',
+    'def f(*, no="spaces", two="parameters",\n\
+           upon="more", than="one_line"):\n\
+        pass',
+    # missing
     'def f(*,\n\
         yes = "spaces"\n\
     ):\n\
         pass',
+    'def f(*,\n\
+        yes = "spaces",\n\
+        two = "parameters"\n\
+    ):\n\
+        pass',
+    # combine
+    'def f(*,\n\
+        yes = "spaces",\n\
+        two = "parameters",\n\
+        everything="combine", final="form"\n\
+    ):\n\
+        pass',
 ]
 invalid_keyword_only_def = [
-    ([(1, 13, unexpected_msg)],
+    # unexpected (col = 1-based, first column after arg name)
+    ([(1, 14, unexpected_msg)],
      'def f(*, left ="space"):\n\
         pass'),
-    ([(2, 9, missing_msg)],
+    ([(1, 15, unexpected_msg)],
+     'def f(*, right= "spaces"):\n\
+        pass'),
+    ([(1, 14, unexpected_msg)],
+     'def f(*, both = "spaces"):\n\
+        pass'),
+    ([(2, 26, unexpected_msg)],
      'def f(*,\n\
-        x= 1\n\
+        upon="more", than ="one"):\n\
+        pass'),
+    # missing
+    ([(2, 13, missing_msg)],
+     'def f(*,\n\
+        left= "space"\n\
+     ):\n\
+        pass'),
+    ([(2, 14, missing_msg)],
+     'def f(*,\n\
+        right ="space"\n\
+     ):\n\
+        pass'),
+    ([(3, 12, missing_msg)],
+     'def f(*,\n\
+        yes = "spaces",\n\
+        two= "parameters"\n\
      ):\n\
         pass'),
 ]
 
 valid_positional_only_def = [
-    'def f(a=1, /):\n\
+    # unexpected
+    'def f(no="spaces", /):\n\
         pass',
-    'def f(a=1, /, b=2):\n\
+    'def f(no="spaces", two="parameters", /):\n\
+        pass',
+    'def f(no="spaces", two="parameters",\n\
+           upon="more", than="one_line", /):\n\
+        pass',
+    # missing
+    'def f(\n\
+        yes = "spaces", /\n\
+    ):\n\
         pass',
     'def f(\n\
-        a = 1, /\n\
+        yes = "spaces",\n\
+        two = "parameters", /\n\
+    ):\n\
+        pass',
+    # combine
+    'def f(\n\
+        yes = "spaces",\n\
+        two = "parameters",\n\
+        everything="combine", final="form", /\n\
     ):\n\
         pass',
 ]
 invalid_positional_only_def = [
-    ([(1, 10, unexpected_msg)],
+    # unexpected (col = 1-based, first column after arg name)
+    ([(1, 11, unexpected_msg)],
      'def f(left ="space", /):\n\
         pass'),
-    ([(2, 9, missing_msg)],
+    ([(1, 12, unexpected_msg)],
+     'def f(right= "spaces", /):\n\
+        pass'),
+    ([(1, 11, unexpected_msg)],
+     'def f(both = "spaces", /):\n\
+        pass'),
+    ([(2, 26, unexpected_msg)],
      'def f(\n\
-        x= 1, /\n\
+        upon="more", than ="one", /):\n\
+        pass'),
+    # missing
+    ([(2, 13, missing_msg)],
+     'def f(\n\
+        left= "space", /\n\
+     ):\n\
+        pass'),
+    ([(2, 14, missing_msg)],
+     'def f(\n\
+        right ="space", /\n\
+     ):\n\
+        pass'),
+    ([(3, 12, missing_msg)],
+     'def f(\n\
+        yes = "spaces",\n\
+        two= "parameters", /\n\
      ):\n\
         pass'),
 ]
