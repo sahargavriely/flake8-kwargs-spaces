@@ -18,6 +18,8 @@ class Visitor(ast.NodeVisitor):
     def visit_Call(self, node: ast.Call) -> Any:
         lines = dict()
         for keyword in node.keywords:
+            if keyword.arg is None:
+                continue
             if keyword.lineno not in lines:
                 lines[keyword.lineno] = list()
             lines.get(keyword.lineno).append((len(keyword.arg) + keyword.col_offset, keyword.value))
