@@ -83,7 +83,10 @@ class Visitor(ast.NodeVisitor):
 
 class Plugin:
     name = __name__
-    version = importlib.metadata.version(__name__)
+    try:
+        version = importlib.metadata.version(__name__)
+    except importlib.metadata.PackageNotFoundError:
+        version = '0.0.0'
 
     def __init__(self, tree: ast.AST) -> None:
         self._tree = tree
