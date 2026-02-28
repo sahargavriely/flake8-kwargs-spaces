@@ -93,7 +93,7 @@ pip install flake8-kwargs-spaces
 4. The install script builds a wheel under `wheels/`. To use the plugin with Flake8, install that wheel in the environment where you want the plugin enforced:
 
    ```sh
-   pip install ./wheels/flake8_kwargs_spaces-0.1.0-py3-none-any.whl
+   pip install ./wheels/flake8_kwargs_spaces-*.whl
    ```
 
 5. To avoid conflicts with Flake8’s built-in E251 rule, add a `setup.cfg` (or use your existing one) with:
