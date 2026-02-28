@@ -3,7 +3,12 @@
 
 # Flake8 Keyword Arguments with Spaces Plugin
 
-The `flake8-kwargs-spaces` package is a plugin for Flake8 that enforces consistent spacing around the equals sign (`=`) in function arguments, in both definitions and calls. It supports enforcing either spaces or no spaces depending on the argument's position (inline or multi-line) and the number of arguments in sequence. By integrating this plugin, developers can ensure uniform code formatting and adherence to style guidelines.
+The `flake8-kwargs-spaces` package is a plugin for Flake8 that enforces consistent spacing around the equals sign (`=`) in function arguments, in both definitions and calls. By integrating this plugin, developers can ensure uniform code formatting and adherence to style guidelines.
+
+## Rules
+
+- **Multiline:** When a keyword argument or default is on its own line (e.g. one argument under the `def` or call), use **spaces** around `=` → `key = 'val'`. Violations are reported as **EKS100**.
+- **Inline:** When the argument is on the same line as the `def`/call, or when multiple keyword arguments appear on the same line, use **no spaces** around `=` → `key='val'`. Violations are reported as **EKS251**.
 
 ## Anti-pattern
 

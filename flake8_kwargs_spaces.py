@@ -3,8 +3,14 @@ import importlib.metadata
 from typing import Any, Dict, Generator, List, Tuple, Type
 
 
-missing_msg = 'EKS100 missing whitespace around keyword / parameter equals'
-unexpected_msg = 'EKS251 unexpected whitespace around keyword / parameter equals'
+missing_msg = (
+    'EKS100 missing whitespace around keyword / parameter equals '
+    '(use spaces when the argument is on its own line)'
+)
+unexpected_msg = (
+    'EKS251 unexpected whitespace around keyword / parameter equals '
+    '(no spaces when inline or multiple args on one line)'
+)
 
 
 def _default_pairs_from_args(args: ast.arguments) -> List[Tuple[ast.arg, ast.expr]]:
