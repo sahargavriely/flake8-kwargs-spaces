@@ -16,6 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      release_version: ${{ steps.set_release_version.outputs.release_version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -92,3 +94,35 @@ jobs:
           gh release create "v${{ steps.version.outputs.release_version }}" \
             --title "v${{ steps.version.outputs.release_version }}" \
             --generate-notes
+
+      - name: Set release version output
+        if: steps.skip.outputs.skip == 'false'
+        id: set_release_version
+        run: echo "release_version=${{ steps.version.outputs.release_version }}" >> $GITHUB_OUTPUT
+
+  publish-pypi:
+    name: Publish to PyPI
+    needs: bump-and-release
+    if: needs.bump-and-release.outputs.release_version != ''
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: refs/tags/v${{ needs.bump-and-release.outputs.release_version }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install build backend
+        run: pip install build
+
+      - name: Build package (sdist + wheel)
+        run: python -m build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
