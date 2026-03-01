@@ -103,6 +103,13 @@ pip install flake8-kwargs-spaces
    ignore = E251
    ```
 
+6. (Optional) Enable pre-commit hooks:
+
+   ```sh
+   pre-commit install
+   pre-commit run --all-files
+   ```
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
