@@ -24,10 +24,10 @@ jobs:
         run: ./scripts/install.sh
       - name: Lint with flake8
         run: |
-          pip install flake8
-          flake8 flake8_kwargs_spaces.py --count --show-source --statistics
-          flake8 tests/ --count --show-source --statistics
-          flake8 setup.py --count --show-source --statistics
+          venv/bin/pip install flake8
+          venv/bin/flake8 flake8_kwargs_spaces.py --count --show-source --statistics
+          venv/bin/flake8 tests/ --count --show-source --statistics
+          venv/bin/flake8 setup.py --count --show-source --statistics
       - name: Test with pytest
         run: ./scripts/test.sh
       - name: Upload coverage reports to Codecov
@@ -128,9 +128,14 @@ jobs:
           BRANCH="chore/bump-version-$NEW"
           git push --force origin HEAD:"$BRANCH"
           BODY="Automated version bump. Merge this PR, then the next workflow run will tag and publish to PyPI."
-          gh pr create --base main --head "$BRANCH" \
-            --title "chore: bump version to $NEW" \
-            --body "$BODY"
+          EXISTING_PR_COUNT=$(gh pr list --base main --head "$BRANCH" --state open --json number --jq 'length')
+          if [ "$EXISTING_PR_COUNT" -eq 0 ]; then
+            gh pr create --base main --head "$BRANCH" \
+              --title "chore: bump version to $NEW" \
+              --body "$BODY"
+          else
+            echo "Open PR for $BRANCH already exists; skipping PR creation."
+          fi
 
       - name: Create tag and push tag (only after bump PR is merged or user set version)
         if: steps.mode.outputs.should_release == 'true'
