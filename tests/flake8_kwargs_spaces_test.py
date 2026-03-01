@@ -1,8 +1,11 @@
 import ast
+import importlib
+import sys
 from typing import Set
 
 import pytest
 
+import flake8_kwargs_spaces
 from flake8_kwargs_spaces import Plugin, missing_msg, unexpected_msg
 
 
@@ -11,11 +14,14 @@ trivial = [
     # func call no kwargs
     'f()',
     'f(a)',
+    'f(**kwargs)',
     # 'func def no kwargs
     'def f():\n\
         pass',
     'def f(a):\n\
-        pass'
+        pass',
+    'def f(**kwargs):\n\
+        pass',
 ]
 valid_functions_call = [
     # unexpected
@@ -40,19 +46,19 @@ valid_functions_call = [
 ]
 invalid_functions_call = [
     # unexpected
-    ([(1, 8, unexpected_msg)], 'f(left ="space")'),
-    ([(1, 9, unexpected_msg)], 'f(right= "space")'),
-    ([(1, 8, unexpected_msg)], 'f(two = "spaces")'),
-    ([(2, 26, unexpected_msg)],
+    ([(1, 7, unexpected_msg)], 'f(left ="space")'),
+    ([(1, 8, unexpected_msg)], 'f(right= "space")'),
+    ([(1, 6, unexpected_msg)], 'f(two = "spaces")'),
+    ([(2, 25, unexpected_msg)],
      'f(\n\
         more="than", one= "line"\n\
      )'),
     # missing
-    ([(2, 14, missing_msg)],
+    ([(2, 13, missing_msg)],
      'f(\n\
         left ="space"\n\
      )'),
-    ([(2, 15, missing_msg)],
+    ([(2, 14, missing_msg)],
      'f(\n\
         right= "space"\n\
      )'),
@@ -63,8 +69,8 @@ invalid_functions_call = [
     # combine
     (
         [
-            (1, 8, unexpected_msg),
-            (2, 18, missing_msg),
+            (1, 7, unexpected_msg),
+            (2, 17, missing_msg),
         ],
         'f(left ="space", no="space",\n\
            right= "space",\n\
@@ -101,35 +107,221 @@ valid_functions_def = [
         pass',
 ]
 invalid_functions_def = [
-    # unexpected
-    ([(1, 12, unexpected_msg)],
+    # unexpected (col = 1-based, first column after arg name)
+    ([(1, 11, unexpected_msg)],
      'def f(left ="space"):\n\
         pass'),
-    ([(1, 13, unexpected_msg)],
+    ([(1, 12, unexpected_msg)],
      'def f(right= "spaces"):\n\
         pass'),
-    ([(1, 13, unexpected_msg)],
+    ([(1, 11, unexpected_msg)],
      'def f(both = "spaces"):\n\
         pass'),
-    ([(2, 27, unexpected_msg)],
+    ([(2, 26, unexpected_msg)],
      'def f(\n\
         upon="more", than ="one"):\n\
         pass'),
     # missing
-    ([(2, 14, missing_msg)],
+    ([(2, 13, missing_msg)],
      'def f(\n\
         left= "space"\n\
      ):\n\
         pass'),
-    ([(2, 15, missing_msg)],
+    ([(2, 14, missing_msg)],
      'def f(\n\
         right ="space"\n\
      ):\n\
         pass'),
-    ([(3, 13, missing_msg)],
+    ([(3, 12, missing_msg)],
      'def f(\n\
         yes = "spaces",\n\
         two= "parameters"\n\
+     ):\n\
+        pass'),
+]
+
+valid_async_function_def = [
+    # unexpected
+    'async def f(no="spaces"):\n\
+        pass',
+    'async def f(no="spaces", two="parameters"):\n\
+        pass',
+    'async def f(no="spaces", two="parameters",\n\
+           upon="more", than="one_line"):\n\
+        pass',
+    # missing
+    'async def f(\n\
+        yes = "spaces"\n\
+    ):\n\
+        pass',
+    'async def f(\n\
+        yes = "spaces",\n\
+        two = "parameters"\n\
+    ):\n\
+        pass',
+    # combine
+    'async def f(\n\
+        yes = "spaces",\n\
+        two = "parameters",\n\
+        everything="combine", final="form"\n\
+    ):\n\
+        pass',
+]
+invalid_async_function_def = [
+    # unexpected (col = 1-based, first column after arg name)
+    ([(1, 17, unexpected_msg)],
+     'async def f(left ="space"):\n\
+        pass'),
+    ([(1, 18, unexpected_msg)],
+     'async def f(right= "spaces"):\n\
+        pass'),
+    ([(1, 17, unexpected_msg)],
+     'async def f(both = "spaces"):\n\
+        pass'),
+    ([(2, 26, unexpected_msg)],
+     'async def f(\n\
+        upon="more", than ="one"):\n\
+        pass'),
+    # missing
+    ([(2, 13, missing_msg)],
+     'async def f(\n\
+        left= "space"\n\
+     ):\n\
+        pass'),
+    ([(2, 14, missing_msg)],
+     'async def f(\n\
+        right ="space"\n\
+     ):\n\
+        pass'),
+    ([(3, 12, missing_msg)],
+     'async def f(\n\
+        yes = "spaces",\n\
+        two= "parameters"\n\
+     ):\n\
+        pass'),
+]
+
+valid_keyword_only_def = [
+    # kw-only required arg (no default) should be ignored by default-pair checks
+    'def f(*, required):\n\
+        pass',
+    # unexpected
+    'def f(*, no="spaces"):\n\
+        pass',
+    'def f(*, no="spaces", two="parameters"):\n\
+        pass',
+    'def f(*, no="spaces", two="parameters",\n\
+           upon="more", than="one_line"):\n\
+        pass',
+    # missing
+    'def f(*,\n\
+        yes = "spaces"\n\
+    ):\n\
+        pass',
+    'def f(*,\n\
+        yes = "spaces",\n\
+        two = "parameters"\n\
+    ):\n\
+        pass',
+    # combine
+    'def f(*,\n\
+        yes = "spaces",\n\
+        two = "parameters",\n\
+        everything="combine", final="form"\n\
+    ):\n\
+        pass',
+]
+invalid_keyword_only_def = [
+    # unexpected (col = 1-based, first column after arg name)
+    ([(1, 14, unexpected_msg)],
+     'def f(*, left ="space"):\n\
+        pass'),
+    ([(1, 15, unexpected_msg)],
+     'def f(*, right= "spaces"):\n\
+        pass'),
+    ([(1, 14, unexpected_msg)],
+     'def f(*, both = "spaces"):\n\
+        pass'),
+    ([(2, 26, unexpected_msg)],
+     'def f(*,\n\
+        upon="more", than ="one"):\n\
+        pass'),
+    # missing
+    ([(2, 13, missing_msg)],
+     'def f(*,\n\
+        left= "space"\n\
+     ):\n\
+        pass'),
+    ([(2, 14, missing_msg)],
+     'def f(*,\n\
+        right ="space"\n\
+     ):\n\
+        pass'),
+    ([(3, 12, missing_msg)],
+     'def f(*,\n\
+        yes = "spaces",\n\
+        two= "parameters"\n\
+     ):\n\
+        pass'),
+]
+
+valid_positional_only_def = [
+    # unexpected
+    'def f(no="spaces", /):\n\
+        pass',
+    'def f(no="spaces", two="parameters", /):\n\
+        pass',
+    'def f(no="spaces", two="parameters",\n\
+           upon="more", than="one_line", /):\n\
+        pass',
+    # missing
+    'def f(\n\
+        yes = "spaces", /\n\
+    ):\n\
+        pass',
+    'def f(\n\
+        yes = "spaces",\n\
+        two = "parameters", /\n\
+    ):\n\
+        pass',
+    # combine
+    'def f(\n\
+        yes = "spaces",\n\
+        two = "parameters",\n\
+        everything="combine", final="form", /\n\
+    ):\n\
+        pass',
+]
+invalid_positional_only_def = [
+    # unexpected (col = 1-based, first column after arg name)
+    ([(1, 11, unexpected_msg)],
+     'def f(left ="space", /):\n\
+        pass'),
+    ([(1, 12, unexpected_msg)],
+     'def f(right= "spaces", /):\n\
+        pass'),
+    ([(1, 11, unexpected_msg)],
+     'def f(both = "spaces", /):\n\
+        pass'),
+    ([(2, 26, unexpected_msg)],
+     'def f(\n\
+        upon="more", than ="one", /):\n\
+        pass'),
+    # missing
+    ([(2, 13, missing_msg)],
+     'def f(\n\
+        left= "space", /\n\
+     ):\n\
+        pass'),
+    ([(2, 14, missing_msg)],
+     'def f(\n\
+        right ="space", /\n\
+     ):\n\
+        pass'),
+    ([(3, 12, missing_msg)],
+     'def f(\n\
+        yes = "spaces",\n\
+        two= "parameters", /\n\
      ):\n\
         pass'),
 ]
@@ -160,6 +352,38 @@ def test_invalid_function_def(errors, case):
     _errors_assertions(errors, case)
 
 
+@pytest.mark.parametrize('case', valid_async_function_def)
+def test_valid_async_function_def(case):
+    _no_errors_assertions(case)
+
+
+@pytest.mark.parametrize('errors, case', invalid_async_function_def)
+def test_invalid_async_function_def(errors, case):
+    _errors_assertions(errors, case)
+
+
+@pytest.mark.parametrize('case', valid_keyword_only_def)
+def test_valid_keyword_only_def(case):
+    _no_errors_assertions(case)
+
+
+@pytest.mark.parametrize('errors, case', invalid_keyword_only_def)
+def test_invalid_keyword_only_def(errors, case):
+    _errors_assertions(errors, case)
+
+
+@pytest.mark.skipif(sys.version_info < (3, 8), reason='positional-only parameters require Python 3.8+')
+@pytest.mark.parametrize('case', valid_positional_only_def)
+def test_valid_positional_only_def(case):
+    _no_errors_assertions(case)
+
+
+@pytest.mark.skipif(sys.version_info < (3, 8), reason='positional-only parameters require Python 3.8+')
+@pytest.mark.parametrize('errors, case', invalid_positional_only_def)
+def test_invalid_positional_only_def(errors, case):
+    _errors_assertions(errors, case)
+
+
 def _no_errors_assertions(code):
     existing_errors = _extract_errors(code)
     assert not existing_errors
@@ -176,3 +400,17 @@ def _extract_errors(s: str) -> Set[str]:
     tree = ast.parse(s)
     plugin = Plugin(tree)
     return {f'{line}:{col} {msg}' for line, col, msg, _ in plugin.run()}
+
+
+def test_plugin_version_falls_back_when_package_metadata_is_missing() -> None:
+    # Plugin.version is set at import time, so reload after monkeypatching metadata lookup.
+    with pytest.MonkeyPatch.context() as m:
+        def _raise_package_not_found(_: str) -> str:
+            raise importlib.metadata.PackageNotFoundError
+
+        m.setattr(importlib.metadata, 'version', _raise_package_not_found)
+        reloaded_module = importlib.reload(flake8_kwargs_spaces)
+        assert reloaded_module.Plugin.version == '0.0.0'
+
+    # Restore module state for any subsequent tests.
+    importlib.reload(flake8_kwargs_spaces)

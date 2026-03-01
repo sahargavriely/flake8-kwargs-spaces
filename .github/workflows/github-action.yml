@@ -1,12 +1,10 @@
 name: Python package testing and generate coverage report
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   python-tests:
@@ -21,11 +19,11 @@ jobs:
       run: ./scripts/install.sh
     - name: Lint with flake8
       run: |
-        pip install flake8
+        venv/bin/pip install flake8
         # stop the build if there are Python syntax errors or undefined names
-        flake8 flake8_kwargs_spaces.py --count --show-source --statistics
-        flake8 tests/ --count --show-source --statistics
-        flake8 setup.py --count --show-source --statistics
+        venv/bin/flake8 flake8_kwargs_spaces.py --count --show-source --statistics
+        venv/bin/flake8 tests/ --count --show-source --statistics
+        venv/bin/flake8 setup.py --count --show-source --statistics
     - name: Test with pytest
       run: ./scripts/test.sh
     - name: Upload coverage reports to Codecov

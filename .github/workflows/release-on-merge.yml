@@ -1,0 +1,190 @@
+# On every merge to main:
+# - If this is the merge of our "chore: bump version" PR → tag, release, publish to PyPI.
+# - Else if version in setup.cfg is newer than latest tag (you set 0.2.0) → tag, release, publish.
+# - Else → bump patch, open a PR; you merge it → next run does tag/release/publish.
+
+name: Bump version and release on merge
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  python-tests:
+    name: python-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - name: Create python environment and install dependencies
+        run: ./scripts/install.sh
+      - name: Lint with flake8
+        run: |
+          venv/bin/pip install flake8
+          venv/bin/flake8 flake8_kwargs_spaces.py --count --show-source --statistics
+          venv/bin/flake8 tests/ --count --show-source --statistics
+          venv/bin/flake8 setup.py --count --show-source --statistics
+      - name: Test with pytest
+        run: ./scripts/test.sh
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  bump-and-release:
+    name: Bump patch and publish release
+    needs: python-tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write   # so gh pr create can open the bump-version PR
+    outputs:
+      release_version: ${{ steps.outputs_step.outputs.release_version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Use a PAT so PRs created by this workflow can trigger pull_request workflows.
+          token: ${{ secrets.BOT_GH_TOKEN }}
+
+      - name: Detect mode and version
+        id: mode
+        run: |
+          MSG="${{ github.event.head_commit.message }}"
+          IS_BUMP_MERGE="false"
+          if [[ "$MSG" == *"chore: bump version to"* ]] || [[ "$MSG" == *"chore/bump-version"* ]]; then
+            IS_BUMP_MERGE="true"
+          fi
+          echo "is_bump_merge=$IS_BUMP_MERGE" >> $GITHUB_OUTPUT
+
+          CURRENT=$(grep '^version = ' setup.cfg | sed 's/version = *//;s/ *$//')
+          if [ -z "$CURRENT" ]; then
+            echo "::error::Could not read version from setup.cfg"
+            exit 1
+          fi
+          echo "current_version=$CURRENT" >> $GITHUB_OUTPUT
+
+          LATEST_TAG=$(git tag -l 'v*' --sort=-v:refname 2>/dev/null | head -1)
+          LATEST=${LATEST_TAG#v}
+          LATEST=${LATEST:-0.0.0}
+          NEWER=$(printf '%s\n%s' "$LATEST" "$CURRENT" | sort -V | tail -1)
+          VERSION_NEWER="false"
+          if [ "$NEWER" = "$CURRENT" ] && [ "$CURRENT" != "$LATEST" ]; then
+            VERSION_NEWER="true"
+          fi
+          echo "version_newer=$VERSION_NEWER" >> $GITHUB_OUTPUT
+
+          # Tag/release/publish when: our bump PR was just merged, OR user set a newer version on main
+          SHOULD_RELEASE="false"
+          if [ "$IS_BUMP_MERGE" = "true" ] || [ "$VERSION_NEWER" = "true" ]; then
+            SHOULD_RELEASE="true"
+          fi
+          # Idempotency guard: reruns should not fail if the tag already exists.
+          if [ "$SHOULD_RELEASE" = "true" ] && git ls-remote --exit-code --tags origin "refs/tags/v$CURRENT" >/dev/null 2>&1; then
+            echo "Tag v$CURRENT already exists on origin; skipping release/publish."
+            SHOULD_RELEASE="false"
+          fi
+          echo "should_release=$SHOULD_RELEASE" >> $GITHUB_OUTPUT
+
+          # Open PR when: normal merge and we need to bump (version not newer)
+          NEED_PR="false"
+          if [ "$IS_BUMP_MERGE" = "false" ] && [ "$VERSION_NEWER" = "false" ]; then
+            NEED_PR="true"
+          fi
+          echo "need_pr=$NEED_PR" >> $GITHUB_OUTPUT
+
+          if [ "$NEED_PR" = "true" ]; then
+            MAJOR=$(echo "$CURRENT" | cut -d. -f1)
+            MINOR=$(echo "$CURRENT" | cut -d. -f2)
+            PATCH=$(echo "$CURRENT" | cut -d. -f3)
+            PATCH=${PATCH:-0}
+            PATCH=$((PATCH + 1))
+            NEW="${MAJOR}.${MINOR}.${PATCH}"
+            echo "bump_version=$NEW" >> $GITHUB_OUTPUT
+            echo "Will open PR to bump $CURRENT → $NEW"
+          else
+            echo "bump_version=" >> $GITHUB_OUTPUT
+            if [ "$SHOULD_RELEASE" = "true" ]; then
+              echo "Will tag and release $CURRENT"
+            fi
+          fi
+
+      - name: Update setup.cfg and push to branch (open PR only)
+        if: steps.mode.outputs.need_pr == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.BOT_GH_TOKEN }}
+        run: |
+          NEW="${{ steps.mode.outputs.bump_version }}"
+          sed -i.bak "s/^version = .*/version = $NEW/" setup.cfg && rm setup.cfg.bak
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add setup.cfg
+          git commit -m "chore: bump version to $NEW"
+          BRANCH="chore/bump-version-$NEW"
+          git push --force origin HEAD:"$BRANCH"
+          BODY="Automated version bump. Merge this PR, then the next workflow run will tag and publish to PyPI."
+          EXISTING_PR_COUNT=$(gh pr list --base main --head "$BRANCH" --state open --json number --jq 'length')
+          if [ "$EXISTING_PR_COUNT" -eq 0 ]; then
+            gh pr create --base main --head "$BRANCH" \
+              --title "chore: bump version to $NEW" \
+              --body "$BODY"
+          else
+            echo "Open PR for $BRANCH already exists; skipping PR creation."
+          fi
+
+      - name: Create tag and push tag (only after bump PR is merged or user set version)
+        if: steps.mode.outputs.should_release == 'true'
+        run: |
+          VER="${{ steps.mode.outputs.current_version }}"
+          git tag "v$VER"
+          git push origin "v$VER"
+
+      - name: Create GitHub Release
+        if: steps.mode.outputs.should_release == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${{ steps.mode.outputs.current_version }}" \
+            --title "v${{ steps.mode.outputs.current_version }}" \
+            --generate-notes
+
+      - name: Set release version output (for publish job)
+        id: outputs_step
+        run: |
+          if [ "${{ steps.mode.outputs.should_release }}" = "true" ]; then
+            echo "release_version=${{ steps.mode.outputs.current_version }}" >> $GITHUB_OUTPUT
+          else
+            echo "release_version=" >> $GITHUB_OUTPUT
+          fi
+
+  publish-pypi:
+    name: Publish to PyPI
+    needs: bump-and-release
+    if: needs.bump-and-release.outputs.release_version != ''
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: refs/tags/v${{ needs.bump-and-release.outputs.release_version }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install build backend
+        run: pip install build
+
+      - name: Build package (sdist + wheel)
+        run: python -m build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
