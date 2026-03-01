@@ -106,8 +106,9 @@ pip install flake8-kwargs-spaces
 6. (Optional) Enable pre-commit hooks:
 
    ```sh
-   pre-commit install
+   pre-commit install --hook-type pre-commit --hook-type pre-push
    pre-commit run --all-files
+   pre-commit run --hook-stage pre-push --all-files
    ```
 
 ## License
