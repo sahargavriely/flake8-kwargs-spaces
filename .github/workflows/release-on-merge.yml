@@ -10,6 +10,13 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   python-tests:
     name: python-tests
@@ -168,6 +175,7 @@ jobs:
     if: needs.bump-and-release.outputs.release_version != ''
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       id-token: write
     steps:
       - name: Checkout
