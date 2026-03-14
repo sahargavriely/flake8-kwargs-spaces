@@ -53,7 +53,7 @@ jobs:
       release_version: ${{ steps.outputs_step.outputs.release_version }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           # Use a PAT so PRs created by this workflow can trigger pull_request workflows.
@@ -179,7 +179,7 @@ jobs:
       id-token: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: refs/tags/v${{ needs.bump-and-release.outputs.release_version }}
 
