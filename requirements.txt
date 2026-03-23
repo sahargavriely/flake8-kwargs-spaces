@@ -8,4 +8,4 @@ pycodestyle~=2.14.0
 pyflakes~=3.4.0
 pre-commit~=4.3.0
 pytest~=9.0.2
-pytest-cov~=7.0.0
+pytest-cov~=7.1.0
